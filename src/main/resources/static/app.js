@@ -4,9 +4,6 @@ $(async function () {
     await showRolesInNewUserForm()
 });
 
-const container = document.getElementById('AllUsersTable')
-let output = '';
-
 const userFetchService = {
     head: {
         'Accept': 'application/json',
@@ -22,7 +19,7 @@ const userFetchService = {
         headers: userFetchService.head,
         body: JSON.stringify(user)
     }),
-    updateUser: async (user) => await fetch(`api/users`, {
+    updateUserById: async (user) => await fetch(`api/users`, {
         method: 'PATCH',
         headers: userFetchService.head,
         body: JSON.stringify(user)
@@ -30,12 +27,12 @@ const userFetchService = {
     deleteUser: async (id) => await fetch(`api/users/${id}`, {method: 'DELETE', headers: userFetchService.head})
 }
 
-async function getTableWithUsers() {
+function getTableWithUsers() {
     let table = $('#AllUsersTable');
-    table.empty();
-    await userFetchService.findAllUsers()
+    userFetchService.findAllUsers()
         .then(res => res.json())
         .then(users => {
+            table.empty();
             users.forEach(user => {
                 let tableFilling = `$(
                         <tr>
@@ -43,14 +40,14 @@ async function getTableWithUsers() {
                             <td>${user.name}</td>
                             <td>${user.lastName}</td>
                             <td>${user.age}</td>
-                            <td>${user.username}</td>    
-                            <td>${user.roles.map(role => " " + role.roleName.substring(5))}</td>         
+                            <td>${user.username}</td>
+                            <td>${user.roles.map(role => " " + role.roleName.substring(5))}</td>
                             <td>
-                                <button type="button" onclick="editUser(${user.id})" data-action="edit" class="btn btn-info" 
+                                <button type="button" onclick="editUser(${user.id})" data-action="edit" class="btn btn-info"
                                 data-toggle="modal" data-target="#edit">Edit</button>
                             </td>
                             <td>
-                                <button type="button" onclick="deleteUser(${user.id})" data-action="delete" class="btn btn-danger" 
+                                <button type="button" onclick="deleteUser(${user.id})" data-action="delete" class="btn btn-danger"
                                 data-toggle="modal" data-target="#delete">Delete</button>
                             </td>
                         </tr>
@@ -60,7 +57,7 @@ async function getTableWithUsers() {
         })
 }
 
-async function showLoggedInUser() {
+function showLoggedInUser() {
     userFetchService.showSingleUser()
         .then(res => res.json())
         .then(data => {
@@ -76,7 +73,7 @@ async function showLoggedInUser() {
         })
 }
 
-async function editUser(id) {
+function editUser(id) {
     userFetchService.findOneUser(id)
         .then(res => {
             res.json().then(user => {
@@ -111,32 +108,30 @@ async function editUser(id) {
         })
 }
 
-function updateUser() {
-    document.forms["editForm"].addEventListener("submit", ev => {
-        ev.preventDefault();
-        let editUserRoles = [];
-        for (let i = 0; i < document.forms["editForm"].roles.options.length; i++) {
-            if (document.forms["editForm"].roles.options[i].selected) editUserRoles.push({
-                id: document.forms["editForm"].roles.options[i].value,
-                name: "ROLE_" + document.forms["editForm"].roles.options[i].text
-            })
-        }
-        let user = {
-            id: document.getElementById('editId').value,
-            name: document.getElementById('editName').value,
-            lastName: document.getElementById('editLastName').value,
-            age: document.getElementById('editAge').value,
-            username: document.getElementById('editEmail').value,
-            password: document.getElementById('editPassword').value,
-            roles: editUserRoles
-        };
-        userFetchService.updateUser(user).then(() => {
-            getTableWithUsers()
-            $('#editModalCloseButton').click();
+document.forms["editForm"].addEventListener("submit", ev => {
+    ev.preventDefault();
+    let editUserRoles = [];
+    for (let i = 0; i < document.forms["editForm"].roles.options.length; i++) {
+        if (document.forms["editForm"].roles.options[i].selected) editUserRoles.push({
+            id: document.forms["editForm"].roles.options[i].value,
+            name: "ROLE_" + document.forms["editForm"].roles.options[i].text
         })
+    }
+    let user = {
+        id: document.getElementById('editId').value,
+        name: document.getElementById('editName').value,
+        lastName: document.getElementById('editLastName').value,
+        age: document.getElementById('editAge').value,
+        username: document.getElementById('editEmail').value,
+        password: document.getElementById('editPassword').value,
+        roles: editUserRoles
+    };
+    userFetchService.updateUserById(user).then(() => {
+        $('#editModalCloseButton').click();
+        getTableWithUsers()
     })
-}
 
+})
 
 function deleteUser(id) {
     userFetchService.findOneUser(id)
@@ -168,7 +163,6 @@ function deleteUser(id) {
                         })
                     });
             })
-
         })
 }
 
@@ -184,34 +178,33 @@ function deleteUserById() {
     })
 }
 
-function addUser() {
-    document.forms["newUserForm"].addEventListener("submit", ev => {
-        ev.preventDefault();
-        let newUserRoles = [];
-        for (let i = 0; i < document.forms["newUserForm"].roles.options.length; i++) {
-            if (document.forms["newUserForm"].roles.options[i].selected) newUserRoles.push({
-                id: document.forms["newUserForm"].roles.options[i].value,
-                name: document.forms["newUserForm"].roles.options[i].name
-            })
-        }
-        let user = {
-            name: document.getElementById('addName').value,
-            lastName: document.getElementById('addLastName').value,
-            age: document.getElementById('addAge').value,
-            username: document.getElementById('addEmail').value,
-            password: document.getElementById('addPassword').value,
-            roles: newUserRoles
-        };
-        userFetchService.addNewUser(user)
-            .then(() => {
-                document.forms["newUserForm"].reset();
-                getTableWithUsers();
-                $('#nav-tab li:first-child a').tab('show')
-            })
-    })
-}
 
-async function showRolesInNewUserForm() {
+document.forms["newUserForm"].addEventListener("submit", ev => {
+    ev.preventDefault();
+    let newUserRoles = [];
+    for (let i = 0; i < document.forms["newUserForm"].roles.options.length; i++) {
+        if (document.forms["newUserForm"].roles.options[i].selected) newUserRoles.push({
+            id: document.forms["newUserForm"].roles.options[i].value,
+            name: document.forms["newUserForm"].roles.options[i].name
+        })
+    }
+    let user = {
+        name: document.getElementById('addName').value,
+        lastName: document.getElementById('addLastName').value,
+        age: document.getElementById('addAge').value,
+        username: document.getElementById('addEmail').value,
+        password: document.getElementById('addPassword').value,
+        roles: newUserRoles
+    };
+    userFetchService.addNewUser(user)
+        .then(() => {
+            document.forms["newUserForm"].reset();
+            getTableWithUsers();
+            $('#nav-tab li:first-child a').tab('show')
+        })
+})
+
+function showRolesInNewUserForm() {
     userFetchService.findAllRoles()
         .then(res => res.json())
         .then(roles => {
@@ -223,5 +216,3 @@ async function showRolesInNewUserForm() {
             })
         })
 }
-
-// исправить дублирование таблицы при операциях (через раз)
