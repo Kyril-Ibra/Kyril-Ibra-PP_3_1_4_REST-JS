@@ -1,12 +1,11 @@
 $(async function () {
-     await getTableWithUsers();
-     await showLoggedInUser()
+    await getTableWithUsers();
+    await showLoggedInUser();
+    await showRolesInNewUserForm()
 });
 
-const url = 'http://localhost:8080/api/users';
 const container = document.getElementById('AllUsersTable')
 let output = '';
-const name = document.getElementById('name')
 
 const userFetchService = {
     head: {
@@ -15,7 +14,8 @@ const userFetchService = {
         'Referer': null
     },
     findAllUsers: async () => await fetch('api/users'),
-    showSingleUser: async () => await fetch('api/userView'),
+    findAllRoles: async () => await fetch('api/user/roles'),
+    showSingleUser: async () => await fetch('api/user-view'),
     findOneUser: async (id) => await fetch(`api/users/${id}`),
     addNewUser: async (user) => await fetch('api/users', {
         method: 'POST',
@@ -80,29 +80,56 @@ async function editUser(id) {
     userFetchService.findOneUser(id)
         .then(res => {
             res.json().then(user => {
+
                 $('#editId').val(user.id)
                 $('#editName').val(user.name)
                 $('#editLastName').val(user.lastName)
                 $('#editAge').val(user.age)
                 $('#editEmail').val(user.username)
                 $('#editPassword').val("")
-                $('#editRoles').val(user.roles)
+                $('#editRoles').empty();
+
+                userFetchService.findAllRoles()
+                    .then(res => res.json())
+                    .then(roles => {
+                        roles.forEach(role => {
+                            let selectedRole = false;
+                            for (let i = 0; i < user.roles.length; i++) {
+                                if (user.roles[i].roleName === role.roleName) {
+                                    selectedRole = true;
+                                    break;
+                                }
+                            }
+                            let el = document.createElement("option");
+                            el.text = role.roleName.substring(5);
+                            el.value = role.id;
+                            if (selectedRole) el.selected = true;
+                            $('#editRoles')[0].appendChild(el);
+                        })
+                    })
             })
         })
 }
 
 function updateUser() {
-    let user = {
-        id: document.getElementById('editId').value,
-        name: document.getElementById('editName').value,
-        lastName: document.getElementById('editLastName').value,
-        age: document.getElementById('editAge').value,
-        username: document.getElementById('editEmail').value,
-        password: document.getElementById('editPassword').value,
-         // roles: [document.getElementById('editRoles').value]
-    };
     document.forms["editForm"].addEventListener("submit", ev => {
         ev.preventDefault();
+        let editUserRoles = [];
+        for (let i = 0; i < document.forms["editForm"].roles.options.length; i++) {
+            if (document.forms["editForm"].roles.options[i].selected) editUserRoles.push({
+                id: document.forms["editForm"].roles.options[i].value,
+                name: "ROLE_" + document.forms["editForm"].roles.options[i].text
+            })
+        }
+        let user = {
+            id: document.getElementById('editId').value,
+            name: document.getElementById('editName').value,
+            lastName: document.getElementById('editLastName').value,
+            age: document.getElementById('editAge').value,
+            username: document.getElementById('editEmail').value,
+            password: document.getElementById('editPassword').value,
+            roles: editUserRoles
+        };
         userFetchService.updateUser(user).then(() => {
             getTableWithUsers()
             $('#editModalCloseButton').click();
@@ -120,8 +147,28 @@ function deleteUser(id) {
                 $('#deleteLastName').val(user.lastName)
                 $('#deleteAge').val(user.age)
                 $('#deleteEmail').val(user.username)
-                $('#deleteRoles').val(user.role)
+                $('#deleteRoles').empty();
+
+                userFetchService.findAllRoles()
+                    .then(res => res.json())
+                    .then(roles => {
+                        roles.forEach(role => {
+                            let selectedRole = false;
+                            for (let i = 0; i < user.roles.length; i++) {
+                                if (user.roles[i].roleName === role.roleName) {
+                                    selectedRole = true;
+                                    break;
+                                }
+                            }
+                            let el = document.createElement("option");
+                            el.text = role.roleName.substring(5);
+                            el.value = role.id;
+                            if (selectedRole) el.selected = true;
+                            $('#deleteRoles')[0].appendChild(el);
+                        })
+                    });
             })
+
         })
 }
 
@@ -138,16 +185,23 @@ function deleteUserById() {
 }
 
 function addUser() {
-    let user = {
-        name: document.getElementById('addName').value,
-        lastName: document.getElementById('addLastName').value,
-        age: document.getElementById('addAge').value,
-        username: document.getElementById('addEmail').value,
-        password: document.getElementById('addPassword').value,
-        // roles: document.getElementById('addRoles').value;
-    };
     document.forms["newUserForm"].addEventListener("submit", ev => {
         ev.preventDefault();
+        let newUserRoles = [];
+        for (let i = 0; i < document.forms["newUserForm"].roles.options.length; i++) {
+            if (document.forms["newUserForm"].roles.options[i].selected) newUserRoles.push({
+                id: document.forms["newUserForm"].roles.options[i].value,
+                name: document.forms["newUserForm"].roles.options[i].name
+            })
+        }
+        let user = {
+            name: document.getElementById('addName').value,
+            lastName: document.getElementById('addLastName').value,
+            age: document.getElementById('addAge').value,
+            username: document.getElementById('addEmail').value,
+            password: document.getElementById('addPassword').value,
+            roles: newUserRoles
+        };
         userFetchService.addNewUser(user)
             .then(() => {
                 document.forms["newUserForm"].reset();
@@ -157,5 +211,17 @@ function addUser() {
     })
 }
 
-// добавить роли
-// исправить дублирование таблицы при операциях
+async function showRolesInNewUserForm() {
+    userFetchService.findAllRoles()
+        .then(res => res.json())
+        .then(roles => {
+            roles.forEach(role => {
+                let el = document.createElement("option");
+                el.text = role.roleName.substring(5);
+                el.value = role.id;
+                $('#addRoles')[0].appendChild(el);
+            })
+        })
+}
+
+// исправить дублирование таблицы при операциях (через раз)

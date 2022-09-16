@@ -82,10 +82,10 @@ public class UserServiceImpl implements UserService {
         return roleRepository.findAll();
     }
 
-
     public User findByUsername(String email) {
         return userRepository.findByUsername(email);
     }
+
     @Override
     public Set<Role> findRolesByName(String roleName) {
         Set<Role> roles = new HashSet<>();

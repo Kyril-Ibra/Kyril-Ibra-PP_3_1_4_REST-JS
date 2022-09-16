@@ -1,7 +1,5 @@
 package ru.kata.spring.boot_security.demo.controller;
 
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -10,9 +8,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import ru.kata.spring.boot_security.demo.models.User;
 import ru.kata.spring.boot_security.demo.service.UserService;
-import ru.kata.spring.boot_security.demo.service.UserServiceImpl;
-
-import java.security.Principal;
 
 
 @Controller
@@ -30,9 +25,6 @@ public class UserController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
         User user = (User) userService.loadUserByUsername(email);
-        model.addAttribute("users", userService.getAllUsers());
-        model.addAttribute("listRoles", userService.getRoles());
-        model.addAttribute("newUser", new User());
         model.addAttribute("user", user);
         return "/admin";
     }
@@ -44,7 +36,6 @@ public class UserController {
         model.addAttribute("user", userService.loadUserByUsername(email));
         return "/user";
     }
-
 
     @GetMapping("/403")
     public String error403() {
